@@ -1,7 +1,3 @@
-# built application files
-*.apk
-*.ap_
-
 # Java class files
 *.class
 
@@ -25,4 +21,3 @@ Thumbs.db
 build/
 
 *ASUS_PC_01*
-
