@@ -29,8 +29,17 @@ public abstract class FTCMain {
     public static double motorBLeftFwd;
     public static double motorBRightFwd;
 
+    //Misc. motors
+    public static DcMotor motorLShoot = null;
+    public static DcMotor motorRShoot = null;
+
+    //Servos
+    public static Servo servoShooterPipe = null;
+    public static Servo servoShooterGate = null;
+
     //Sensors
-    public static GyroSensor gyroMain;
+    public static GyroSensor gyroMain = null;
+    public static OpticalDistanceSensor distanceMainF = null;
 
     public static double motorOffset = 0.2;
     public static short maxMotorPower = 1;
@@ -52,10 +61,16 @@ public abstract class FTCMain {
             motorBRight = hwMap.get(DcMotor.class, "motorBRight");
 
             //Misc. motor hwMaps
-            //------------------
+            motorLShoot = hwMap.get(DcMotor.class, "motorLShoot");
+            motorRShoot = hwMap.get(DcMotor.class, "motorRShoot");
+
+            //Servos hwMaps
+            servoShooterPipe = hwMap.get(Servo.class, "servoShooterPipe");
+            servoShooterGate = hwMap.get(Servo.class, "servoShooterGate");
 
             //Sensor hwMaps
             gyroMain = hwMap.get(GyroSensor.class, "gyroMain");
+            distanceMainF = hwMap.get(OpticalDistanceSensor.class, "distanceMainF");
 
             //Start status setting
 
@@ -117,8 +132,13 @@ public abstract class FTCMain {
     }
     public abstract static class DriveTeleOp extends LinearOpMode {
 
-        public static void FieldCentricMecanum(short North, short East, short TurnCW, byte currentGear) {
+        public static void FieldCentricMecanum(double North, double East, double TurnCW, byte currentGear) {
+            double Kf = 1; //Adjustments for forwards power
+            double Ks = 1; //Adjustments for strafe power
+            double Kt = 1; //Adjustments for turning power
+
             boolean firstRun = false;
+
             if (!firstRun){
                 motorFLeftv = 0; //Clear the global variables on the first run, just in case.
                 motorFRightv = 0;
@@ -162,6 +182,7 @@ public abstract class FTCMain {
     }
 
     public abstract static class DriveAuton extends LinearOpMode {
+
         final static int WHEEL_DIAMETER = 4;     //Diameter of the wheel in inches
         final static double WHEEL_DIAMETER_MM = WHEEL_DIAMETER * (25.4);
         final static double CIRCUMFERENCE = Math.PI * WHEEL_DIAMETER_MM;
@@ -215,7 +236,7 @@ public abstract class FTCMain {
                 HEADING += 180;
             }
             do {
-                Thetacurr = gyroMainAuto.getHeading();
+                Thetacurr = gyroMain.getHeading();
                 if (Thetacurr > 180) {
                     Thetacurr -= 180;
                 } else {
@@ -279,7 +300,7 @@ public abstract class FTCMain {
         public static void ASSMoveLF(boolean FORWARDS, boolean gearInversion){
             double HEADING_DELTA;
             final double PerfectColorValue = 0.0825;
-            Thetacurr = gyroMainAuto.getHeading();
+            Thetacurr = gyroMain.getHeading();
 
             if (Thetacurr > 180) {
                 HEADING_TARGET = Thetacurr - 180;
@@ -298,7 +319,7 @@ public abstract class FTCMain {
             }
             if (gearInversion) DIRECTION_MULTIPLIER *= -1;
             do {
-                Thetacurr = gyroMainAuto.getHeading();
+                Thetacurr = gyroMain.getHeading();
                 if (Thetacurr > 180) {
                     GYRO_HEADING_NEW = Thetacurr - 180;
                 } else {
@@ -339,7 +360,7 @@ public abstract class FTCMain {
         }
         public static void ASSMove(double DISTANCE, boolean FORWARDS, boolean gearInversion) { //"AutomatedStabilitySystemMove"
             double HEADING_DELTA;
-            Thetacurr = gyroMainAuto.getHeading();
+            Thetacurr = gyroMain.getHeading();
 
             if (Thetacurr > 180) {
                 HEADING_TARGET = Thetacurr - 180;
@@ -377,7 +398,7 @@ public abstract class FTCMain {
                     move = false;
                     AllStop();
                 }
-                Thetacurr = gyroMainAuto.getHeading();
+                Thetacurr = gyroMain.getHeading();
                 if (Thetacurr > 180) {
                     GYRO_HEADING_NEW = Thetacurr - 180;
                 } else {
@@ -434,7 +455,7 @@ public abstract class FTCMain {
                         Thetadelta = Thetadelta + 360;
                     }
                 }
-                Thetacurr = gyroMainAuto.getHeading();
+                Thetacurr = gyroMain.getHeading();
                 if (Thetacurr > Thetadelta) {
                     HeadingTurn(Thetacurr - Thetadelta, gearInversion);
                 } else {
@@ -482,27 +503,23 @@ public abstract class FTCMain {
             }
         }
     }
-    public static void FwdShoot(boolean Forwards, boolean gearInversion){
-
-    }
-
     public abstract static class Shooting extends LinearOpMode {
-        public static void ParticleShootTele() {
+        public static void ParticleShootTele(short shootpipeMin, short shootpipeMax) {
             servoShooterPipe.setPosition(shootpipeMin);
             SystemClock.sleep(1000);
             servoShooterPipe.setPosition(shootpipeMax);
         }
 
         public static void ParticleShootAuton() {
-            /*double lshootPower = 0.47;
+            double lshootPower = 0.47;
             double rshootPower = 0.53;
             double shootpipeMin = 0.27;
             double shootpipeMax = 0.53;
             double shootgateMax = 0.78;
-            double shootgateMin = 0.47;*/
-            if ((motorLshoot.getPower() != lshootPower) || (motorRshoot.getPower() != rshootPower)) {
-                motorLshoot.setPower(lshootPower);
-                motorRshoot.setPower(rshootPower);
+            double shootgateMin = 0.47;
+            if ((motorLShoot.getPower() != lshootPower) || (motorRShoot.getPower() != rshootPower)) {
+                motorLShoot.setPower(lshootPower);
+                motorRShoot.setPower(rshootPower);
                 SystemClock.sleep(3000);
             }
             servoShooterPipe.setPosition(shootpipeMin);
@@ -512,17 +529,16 @@ public abstract class FTCMain {
         }
         public static void ParticleShootAuton2()
         {
-            /*
             double shootgateMax = 0.78;
-            double shootgateMin = 0.47;*/
-            motorLshoot.setPower(0);
-            motorRshoot.setPower(0);
+            double shootgateMin = 0.47;
+            motorLShoot.setPower(0);
+            motorRShoot.setPower(0);
             servoShooterGate.setPosition(shootgateMax);
             SystemClock.sleep(1000);
             servoShooterGate.setPosition(shootgateMin);
             ParticleShootAuton();
-            motorLshoot.setPower(0);
-            motorRshoot.setPower(0);
+            motorLShoot.setPower(0);
+            motorRShoot.setPower(0);
         }
 
         public static void ParticleShootAuton2_old() {
@@ -532,9 +548,9 @@ public abstract class FTCMain {
             double shootpipeMax = 0.53;
             double shootgateMax = 0.78;
             double shootgateMin = 0.47;
-            if (motorLshoot.getPower() != lshootPower || motorRshoot.getPower() != rshootPower) {
-                motorLshoot.setPower(lshootPower);
-                motorRshoot.setPower(rshootPower);
+            if (motorLShoot.getPower() != lshootPower || motorRShoot.getPower() != rshootPower) {
+                motorLShoot.setPower(lshootPower);
+                motorRShoot.setPower(rshootPower);
                 SystemClock.sleep(3000);
             }
             servoShooterGate.setPosition(shootgateMax);
@@ -544,8 +560,8 @@ public abstract class FTCMain {
             servoShooterPipe.setPosition(shootpipeMax);
             SystemClock.sleep(1000);
             servoShooterPipe.setPosition(shootgateMin);
-            motorLshoot.setPower(0);
-            motorRshoot.setPower(0);
+            motorLShoot.setPower(0);
+            motorRShoot.setPower(0);
         }
     }
 }
